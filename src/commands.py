@@ -1,0 +1,16 @@
+
+from enum import Enum
+
+
+class TradingCommands(Enum):
+    OPEN_TRADE  = 1
+    MODIFY_POSITION = 2
+    DELETE_ORDER = 3
+    PARTIAL_CLOSE = 4
+    MODIFY_PENDING_ORDER = 5
+    GET_ALL_ORDERS = 6
+    GET_SYMBOL_INFO = 7
+    GET_BROKER_MARKET_INSTRUMENT_LIST = 8
+    GET_OPEN_POSITIONS = 9,
+    GET_CLOSED_POSITIONS = 10,
+    CLOSE_POSITION = 11
