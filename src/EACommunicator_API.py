@@ -1,10 +1,24 @@
 # Pytrader API for MT4 and MT5
 # Version V3_01
+from enum import Enum
+import json
 import zmq
 import numpy as np
 import pandas as pd
 
-from commands import TradingCommands
+class TradingCommands(Enum):
+    OPEN_TRADE  = 1 # ok
+    MODIFY_POSITION = 2 # to test
+    DELETE_ORDER = 3
+    PARTIAL_CLOSE = 4
+    MODIFY_PENDING_ORDER = 5
+    GET_ALL_ORDERS = 6
+    GET_SYMBOL_INFO = 7
+    GET_BROKER_MARKET_INSTRUMENT_LIST = 8
+    GET_OPEN_POSITIONS = 9, # ok
+    GET_CLOSED_POSITIONS = 10, # ok
+    CLOSE_POSITION = 11, # ok
+    GET_LAST_TICK_DATA = 12
 
 class EACommunicator_API:
     
@@ -166,7 +180,24 @@ class EACommunicator_API:
             take_profit,
             comment
         """
-        pass
+        
+        
+        csvReply = self.send_command(TradingCommands.GET_ALL_ORDERS)
+        
+        # Convert csv to pandas dataframe
+        df = self.readCsv(csvReply)
+        
+        # Return pd dataframe
+        return df
+    
+    def readCsv(self, inputCsvString):
+        try:
+            # Convert the CSV string to a Pandas DataFrame
+            df = pd.read_csv(inputCsvString)
+            return df
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
     
     def Get_all_open_positions(self) -> pd.DataFrame:
 
@@ -193,7 +224,13 @@ class EACommunicator_API:
             swap,
             commission
         """
-        self.send_command(TradingCommands.GET_OPEN_POSITIONS)
+        csvReply = self.send_command(TradingCommands.GET_OPEN_POSITIONS)
+        
+        # Convert csv to pandas dataframe
+        df = self.readCsv(csvReply)
+        
+        # Return pd dataframe
+        return df
 
 
     def Get_all_closed_positions(self) -> pd.DataFrame:
@@ -222,7 +259,14 @@ class EACommunicator_API:
             swap,
             commission
         """
-        self.send_command(TradingCommands.GET_CLOSED_POSITIONS)
+        csvReply = self.send_command(TradingCommands.GET_CLOSED_POSITIONS)
+        
+        
+        # Convert csv to pandas dataframe
+        df = self.readCsv(csvReply)
+        
+        # Return pd dataframe
+        return df
 
     def Open_order(self,
                    instrument: str = '',
@@ -255,6 +299,17 @@ class EACommunicator_API:
         arguments = f"{instrument}^{ordertype}^{volume}^{openprice}^{slippage}^{magicnumber}^{stoploss}^{takeprofit}^{comment}^{market}"
         reply = self.send_command(TradingCommands.OPEN_TRADE, arguments)
         
+        # Try to cast reply to int (Expected format)
+        try:
+            reply = int(reply)
+        except Exception as e:
+            print("Failed to cast reply message to int. Received: {} Error:".format(reply))
+            print(e)
+            reply = -1
+            
+        # Return reply
+        return reply
+        
 
     def Close_position_by_ticket(self,
                                  ticket: int = 0) -> bool:
@@ -267,7 +322,9 @@ class EACommunicator_API:
         Returns:
             bool: True or False
         """
-        self.send_command(TradingCommands.CLOSE_POSITION, str(ticket))
+        result = self.send_command(TradingCommands.CLOSE_POSITION, str(ticket))
+        
+        return result == str(ticket)
         
 
     def Close_position_partial_by_ticket(self,
@@ -282,7 +339,10 @@ class EACommunicator_API:
         Returns:
             bool: True or False
         """
-        pass
+        
+        result = self.send_command(TradingCommands.PARTIAL_CLOSE, str(ticket))
+        
+        return result == "OK"
 
     def Delete_order_by_ticket(self,
                                ticket: int = 0) -> bool:
@@ -295,7 +355,10 @@ class EACommunicator_API:
         Returns:
             bool: True or False
         """
-        pass
+        
+        result = self.send_command(TradingCommands.PARTIAL_CLOSE, str(ticket))
+        
+        return result == "OK"
 
     def Set_sl_and_tp_for_position(self,
                                    ticket: int = 0,
@@ -314,7 +377,12 @@ class EACommunicator_API:
         """
         
         arguments = f'{ticket}^{0}^{stoploss}^{takeprofit}'
-        self.send_command(TradingCommands.MODIFY_POSITION, arguments)
+        result = self.send_command(TradingCommands.MODIFY_POSITION, arguments)
+        
+        if result != "OK":
+            print(result)
+        
+        return result == 'OK'
 
     def Set_sl_and_tp_for_order(self,
                                 ticket: int = 0,
@@ -332,7 +400,12 @@ class EACommunicator_API:
             bool: True or False
         """
         arguments = f'{ticket}^{0}^{stoploss}^{takeprofit}'
-        self.send_command(TradingCommands.MODIFY_POSITION, arguments)
+        result = self.send_command(TradingCommands.MODIFY_POSITION, arguments)
+        
+        if result != "OK":
+            print(result)
+        
+        return result == 'OK'
 
 
     def Change_settings_for_pending_order(self,
@@ -357,6 +430,29 @@ class EACommunicator_API:
         arguments = f'{ticket}^{price}^{stoploss}^{takeprofit}'
         self.send_command(TradingCommands.MODIFY_POSITION, arguments)
             
+            
+            
+    def Get_last_tick_info(self, symbol):
+        
+        
+        arguments = f'{symbol}'
+        json_result = self.send_command(TradingCommands.GET_LAST_TICK_DATA, arguments)
+        
+        tick_data = json.loads(json_result)
+
+        # Create a dictionary with required fields
+        last_tick_info = {
+            "instrument": tick_data["instrument"],
+            "date": tick_data["date"],
+            "ask": tick_data["ask"],
+            "bid": tick_data["bid"],
+            "last deal price": tick_data["lastDealPrice"],
+            "volume": tick_data["volume"],
+            "spread": tick_data["spreadPoints"],
+            "date_in_ms": tick_data["dateInMilliseconds"]
+        }
+
+        return last_tick_info
     
     def send_command(self,
                      command: TradingCommands, arguments: str = ''):
