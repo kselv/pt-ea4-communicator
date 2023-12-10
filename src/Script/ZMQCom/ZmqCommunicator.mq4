@@ -88,12 +88,13 @@ string HandleCommand(string command)
                case OPEN_TRADE:
                   // Handle OPEN_TRADE command
                   Print("Received OPEN_TRADE command");
-                  OpenOrder(parsedStrings[1], parsedStrings[2], parsedStrings[3], Ask, parsedStrings[7], parsedStrings[8], parsedStrings[5], parsedStrings[9]);
+                  result = OpenOrder(parsedStrings[1], parsedStrings[2], parsedStrings[3], Ask, parsedStrings[7], parsedStrings[8], parsedStrings[5], parsedStrings[9]);
                   // Your logic for OPEN_TRADE
                   break;
                case MODIFY_POSITION:
                   // Handle MODIFY_POSITION command
                   Print("Received MODIFY_POSITION command");
+                  result = ModifyOrder(parsedStrings[1], parsedStrings[2], parsedStrings[3], parsedStrings[4]);
                   // Your logic for MODIFY_POSITION
                   break;
                case DELETE_ORDER:
@@ -105,6 +106,8 @@ string HandleCommand(string command)
                   // Handle PARTIAL_CLOSE command
                   Print("Received PARTIAL_CLOSE command");
                   // Your logic for PARTIAL_CLOSE
+                  result = PartialClosePosition(parsedStrings[1], parsedStrings[2]);
+                  
                   break;
                case MODIFY_PENDING_ORDER:
                   // Handle MODIFY_PENDING_ORDER command
@@ -115,6 +118,7 @@ string HandleCommand(string command)
                   // Handle GET_ALL_ORDERS command
                   Print("Received GET_ALL_ORDERS command");
                   // Your logic for GET_ALL_ORDERS
+                  result = GetAllPendingOrders();
                   break;
                case GET_SYMBOL_INFO:
                   // Handle GET_SYMBOL_INFO command
@@ -145,9 +149,16 @@ string HandleCommand(string command)
                   // Your logic for CLOSE_POSITION
                   result = ClosePosition(ticket);
                   break;
+               case CLOSE_POSITION:
+                  // Handle GET_LAST_TICK_DATA command
+                  Print("Received GET_LAST_TICK_DATA command");
+                  // Your logic for GET_LAST_TICK_DATA
+                  result = getLastTickDataJSON(parsedStrings[1]);
+                  break;
                default:
                   // Handle unrecognized command
                   Print("Received unrecognized command");
+                  result = "Received unrecognized command";
                   break;
          }
       return result;
