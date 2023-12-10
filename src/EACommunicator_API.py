@@ -312,7 +312,9 @@ class EACommunicator_API:
         Returns:
             bool: True or False
         """
-        pass
+        
+        arguments = f'{ticket}^{0}^{stoploss}^{takeprofit}'
+        self.send_command(TradingCommands.MODIFY_POSITION, arguments)
 
     def Set_sl_and_tp_for_order(self,
                                 ticket: int = 0,
@@ -329,7 +331,8 @@ class EACommunicator_API:
         Returns:
             bool: True or False
         """
-        pass
+        arguments = f'{ticket}^{0}^{stoploss}^{takeprofit}'
+        self.send_command(TradingCommands.MODIFY_POSITION, arguments)
 
 
     def Change_settings_for_pending_order(self,
@@ -350,7 +353,9 @@ class EACommunicator_API:
             bool: True or False
         
         """
-        pass
+        
+        arguments = f'{ticket}^{price}^{stoploss}^{takeprofit}'
+        self.send_command(TradingCommands.MODIFY_POSITION, arguments)
             
     
     def send_command(self,
