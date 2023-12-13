@@ -2,6 +2,7 @@
 # Version V3_01
 from enum import Enum
 import json
+import time
 import zmq
 import numpy as np
 import pandas as pd
@@ -141,10 +142,44 @@ class EACommunicator_API:
         """
         pass
 
+    #   Optional way of building the list
+    brokerInstrumentsLookup = {
+    'eurusd': 'EURUSD',
+    'eurnzd': 'EURNZD',
+    'eurcad': 'EURCAD',
+    'chfjpy': 'CHFJPY',
+    'gbpnzd': 'GBPNZD',
+    'usdchf': 'USDCHF',
+    'usdcad': 'USDCAD',
+    'usdjpy': 'USDJPY',
+    'cadchf': 'CADCHF',
+    'audusd': 'AUDUSD',
+    'audcad': 'AUDCAD',
+    'audjpy': 'AUDJPY',
+    'audchf': 'AUDCHF',
+    'nzdjpy': 'NZDJPY',
+    'euraud': 'EURAUD',
+    'eurgbp': 'EURGBP',
+    'gbpjpy': 'GBPJPY',
+    'gbpaud': 'GBPAUD',
+    'gbpcad': 'GBPCAD',
+    'gbpusd': 'GBPUSD',
+    'nzdcad': 'NZDCAD',
+    'gold': 'GOLD',
+    'uk100': 'UK100',
+    'ger40': 'Ger40',
+    'nzdusd': 'NZDUSD',
+    'audnzd': 'AUDNZD',
+    'usaind': 'UsaInd',
+    'usa500': 'Usa500',
+    'usatec': 'UsaTec',
+    'eurjpy': 'EURJPY'
+}
+
 
     def Get_last_x_bars_from_now(self,
                                  instrument: str = 'EURUSD',
-                                 timeframe: str = "H1",
+                                 timeframe: int = 0,
                                  nbrofbars: int = 1000) -> np.array:
         """
         Retrieves last x bars from a MT4 or MT5 EA bot.
@@ -161,15 +196,19 @@ class EACommunicator_API:
             close,
             volume
         """
-        timeframeInt = self.get_timeframe_value(timeframe)
-        arguments = f"{instrument}^{timeframeInt}^{nbrofbars}"
+        symbol = self.brokerInstrumentsLookup[instrument]
+        # timeframeInt = self.get_timeframe_value(timeframe)
+        arguments = f"{symbol}^{timeframe}^{nbrofbars}"
         csvReply = self.send_command(TradingCommands.GET_X_BARS, arguments)
         
         # Convert csv to pandas dataframe
         df = self.readCsv(csvReply)
         
+        # Process the dataframe to obtain a numpy array
+        np_array = np.array(df.to_records())
+        
         # Return pd dataframe
-        return df
+        return np_array
 
     def Get_all_orders(self) -> pd.DataFrame:
         
@@ -307,7 +346,8 @@ class EACommunicator_API:
         Returns:
             int: ticket number. If -1, open order failed
         """
-        arguments = f"{instrument}^{ordertype}^{volume}^{openprice}^{slippage}^{magicnumber}^{stoploss}^{takeprofit}^{comment}^{market}"
+        symbol = self.brokerInstrumentsLookup[instrument]
+        arguments = f"{symbol}^{ordertype}^{volume}^{openprice}^{slippage}^{magicnumber}^{stoploss}^{takeprofit}^{comment}^{market}"
         reply = self.send_command(TradingCommands.OPEN_TRADE, arguments)
         
         # Try to cast reply to int (Expected format)
@@ -469,12 +509,12 @@ class EACommunicator_API:
                      command: TradingCommands, arguments: str = ''):
         
         msg = "{}^{}".format(command.value, arguments)
-        print(f"Sending command: {msg}")
+        # print(f"Sending command: {msg}")
         self.socket.send_string(str(msg))
-
+        
         # Receive the reply from the server
         reply = self.socket.recv_string()
-        print(f"Received reply: {reply}")
+        # print(f"Received reply: {reply}")
         
         return reply
 
@@ -483,7 +523,7 @@ class EACommunicator_API:
                             timeframe: str = 'D1') -> int:
 
         self.tf = 16408  # mt5.TIMEFRAME_D1
-        timeframe.upper()
+        timeframe = timeframe.upper()
         if timeframe == 'MN1':
             self.tf = 43200  # mt5.TIMEFRAME_MN1                                                 
         if timeframe == 'W1':
