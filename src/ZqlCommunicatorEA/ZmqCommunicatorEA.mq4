@@ -182,6 +182,7 @@ string HandleCommand(string command)
                   // Handle GET_SYMBOL_INFO command
                   //Print("Received GET_SYMBOL_INFO command");
                   // Your logic for GET_SYMBOL_INFO
+                  result = GetSymbolInfo(parsedStrings[1]);
                   break;
                case GET_BROKER_MARKET_INSTRUMENT_LIST:
                   // Handle GET_BROKER_MARKET_INSTRUMENT_LIST command
@@ -217,7 +218,7 @@ string HandleCommand(string command)
                   // Handle GET_X_BARS command
                   //Print("Received GET_X_BARS command");
                   // Your logic for GET_X_BARS
-                  result = getXBars(parsedStrings[1], parsedStrings[2], parsedStrings[3]);
+                  result = getXBars_V2(parsedStrings[1], parsedStrings[2], parsedStrings[3]);
                   break;
                default:
                   // Handle unrecognized command

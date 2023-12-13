@@ -40,8 +40,9 @@ struct ClosedOrder {
     string comment;
 };
 
-void GetSymbolInfo(string symbolName, SymbolInfo& symbolInfo)
+string GetSymbolInfo(string symbolName)
 {
+    SymbolInfo symbolInfo;
     symbolInfo.symbol = symbolName;
     symbolInfo.digits = MarketInfo(symbolName, MODE_DIGITS);
     symbolInfo.maxLotSize = MarketInfo(symbolName, MODE_MAXLOT);
@@ -53,7 +54,24 @@ void GetSymbolInfo(string symbolName, SymbolInfo& symbolInfo)
     symbolInfo.swapLong = MarketInfo(symbolName, MODE_SWAPLONG);
     symbolInfo.swapShort = MarketInfo(symbolName, MODE_SWAPSHORT);
     symbolInfo.stopLevel = MarketInfo(symbolName, MODE_STOPLEVEL);
+
+    string json = "{";
+    json += "\"symbol\": \"" + symbolInfo.symbol + "\",";
+    json += "\"digits\": " + DoubleToString(symbolInfo.digits) + ",";
+    json += "\"maxLotSize\": " + DoubleToString(symbolInfo.maxLotSize) + ",";
+    json += "\"minLotSize\": " + DoubleToString(symbolInfo.minLotSize) + ",";
+    json += "\"lotStep\": " + DoubleToString(symbolInfo.lotStep) + ",";
+    json += "\"point\": " + DoubleToString(symbolInfo.point) + ",";
+    json += "\"tickSize\": " + DoubleToString(symbolInfo.tickSize) + ",";
+    json += "\"tickValue\": " + DoubleToString(symbolInfo.tickValue) + ",";
+    json += "\"swapLong\": " + DoubleToString(symbolInfo.swapLong) + ",";
+    json += "\"swapShort\": " + DoubleToString(symbolInfo.swapShort) + ",";
+    json += "\"stopLevel\": " + DoubleToString(symbolInfo.stopLevel);
+    json += "}";
+
+    return json;
 }
+
 
 
 // Function to retrieve all closed positions and orders
@@ -495,6 +513,59 @@ string getXBars(string instrument, int timeframe, int numberOfBars) {
     return data;
 }
 
+string getXBars_V2(string instrument, int timeframe, int numberOfBars) {
+    string data = "Open,High,Low,Close,Volume,Time\n";
+    MqlTick tick;
+
+    // Ensure the symbol is selected and get the latest tick
+    SymbolSelect(instrument, true);
+    SymbolInfoTick(instrument, tick);
+    //Print("Last ", instrument, " ask price: ", tick.ask);
+
+
+    //bool result = isRefresh(instrument, timeframe);
+    //if (result == false)
+    //{
+    //  Print("Unable to refresh ", instrument);
+    //}
+      
+    // Refresh rates to ensure latest data is fetched
+    RefreshRates();
+
+    // Arrays to store the historical data
+    MqlRates rates[];
+
+    // Resize the array to hold the required number of bars
+    ArraySetAsSeries(rates, true);
+    int size = ArrayResize(rates, numberOfBars);
+   
+    // Copy the rates
+    int copied = CopyRates(instrument, ENUM_TIMEFRAMES(timeframe), 0, numberOfBars, rates);
+    if(copied <= 0) {
+        Print("Error in CopyRates for ", instrument, ". Error code: ", GetLastError());
+        return "";
+    }
+    
+    
+    // Print the latest bar time for the symbol
+    if(copied > 0) {
+        datetime currentTime = TimeCurrent();
+        Print("Current Time: ", TimeToString(currentTime, TIME_DATE | TIME_SECONDS), " Latest Bar Time for ", instrument, ": ", TimeToString(rates[0].time, TIME_DATE | TIME_MINUTES), " Timeframe: ", timeframe, " minutes");
+    }
+
+    // Print the timeframe
+    //Print("Timeframe: ", timeframe, " minutes");
+
+    // Iterate over the copied rates
+    for (int i = copied - 1; i >= 0; i--) {
+        string barInfo = StringFormat("%.5f,%.5f,%.5f,%.5f,%I64d,%s\n",
+                                      rates[i].open, rates[i].high, rates[i].low, rates[i].close,
+                                      rates[i].tick_volume, TimeToString(rates[i].time, TIME_DATE | TIME_MINUTES));
+        data += barInfo;
+    }
+
+    return data;
+}
 
 
 
