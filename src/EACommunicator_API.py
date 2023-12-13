@@ -108,7 +108,29 @@ class EACommunicator_API:
             swap_short
             stop_level for sl and tp distance
         """
-        pass
+        
+        symbol = self.brokerInstrumentsLookup[instrument.lower()]
+        # timeframeInt = self.get_timeframe_value(timeframe)
+        arguments = f"{symbol}"
+        jsonReply = self.send_command(TradingCommands.GET_SYMBOL_INFOT, arguments)
+        
+        # Parse the JSON string into a dictionary
+        info = json.loads(jsonReply)
+
+        # Construct the dictionary with the required fields
+        return {
+            "instrument": info.get("symbol", ""),
+            "digits": info.get("digits", 0),
+            "max_lotsize": info.get("maxLotSize", 0.0),
+            "min_lotsize": info.get("minLotSize", 0.0),
+            "lot_step": info.get("lotStep", 0.0),
+            "point": info.get("point", 0.0),
+            "tick_size": info.get("tickSize", 0.0),
+            "tick_value": info.get("tickValue", 0.0),
+            "swap_long": info.get("swapLong", 0.0),
+            "swap_short": info.get("swapShort", 0.0),
+            "stop_level": info.get("stopLevel", 0.0)
+            }
 
 
     def Get_instruments(self) ->list:
@@ -196,7 +218,7 @@ class EACommunicator_API:
             close,
             volume
         """
-        symbol = self.brokerInstrumentsLookup[instrument]
+        symbol = self.brokerInstrumentsLookup[instrument.lower()]
         # timeframeInt = self.get_timeframe_value(timeframe)
         arguments = f"{symbol}^{timeframe}^{nbrofbars}"
         csvReply = self.send_command(TradingCommands.GET_X_BARS, arguments)
@@ -346,7 +368,11 @@ class EACommunicator_API:
         Returns:
             int: ticket number. If -1, open order failed
         """
-        symbol = self.brokerInstrumentsLookup[instrument]
+        try:
+            symbol = self.brokerInstrumentsLookup[instrument.lower()]
+        except:
+            print("Error getting corresponding {} symbol broker name. Keeping {}".format(instrument, instrument))
+            symbol = instrument
         arguments = f"{symbol}^{ordertype}^{volume}^{openprice}^{slippage}^{magicnumber}^{stoploss}^{takeprofit}^{comment}^{market}"
         reply = self.send_command(TradingCommands.OPEN_TRADE, arguments)
         
