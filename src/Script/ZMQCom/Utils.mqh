@@ -79,7 +79,7 @@ string GetClosedPositionsOrders()
                closedOrder.comment = OrderComment();
                
                // Build the CSV structure
-               string orderLine = StringFormat("%d,%s,%d,%.5f,%.5f,%.5f,%s,%s\n",
+               string orderLine = StringFormat("%d,%s,%d,%.5f,%.5f,%.5f,%s,%s,%s\n",
                    closedOrder.ticket, closedOrder.symbol, closedOrder.type,
                    closedOrder.openPrice, closedOrder.closePrice, closedOrder.profit,
                    TimeToString(closedOrder.openTime, TIME_DATE), TimeToString(closedOrder.closeTime, TIME_DATE), closedOrder.comment
@@ -95,7 +95,7 @@ string GetClosedPositionsOrders()
     
 
 string GetOpenPositions() {
-    string csvString = "Ticket,Symbol,Type,Volume,OpenPrice,StopLoss,TakeProfit,OpenTime\n"; // CSV header
+    string csvString = "ticket,symbol,type,volume,openprice,stoploss,takeprofit,opentime,profit,comment\n"; // CSV header
 
     int totalPositions = OrdersTotal();
     for(int i=OrdersTotal()-1; i>=0; i--)
@@ -109,12 +109,14 @@ string GetOpenPositions() {
             double openPrice = OrderOpenPrice();
             double stopLoss = OrderStopLoss();
             double takeProfit = OrderTakeProfit();
+            double profit = OrderProfit();
             datetime openTime = OrderOpenTime();
+            string comment= OrderComment();
             
             // Build the CSV structure
-            string positionLine = StringFormat("%d,%s,%d,%.5f,%.5f,%.5f,%.5f,%s\n",
+            string positionLine = StringFormat("%d,%s,%d,%.5f,%.5f,%.5f,%.5f,%s,%.5f,%s\n",
                 ticket, symbol, type, volume, openPrice, stopLoss, takeProfit,
-                TimeToString(openTime, TIME_DATE)
+                TimeToString(openTime, TIME_DATE), profit, comment
             );
             
             // Concatenate the position line to the CSV string
@@ -127,7 +129,7 @@ string GetOpenPositions() {
 
 // Function to retrieve pending orders and store in a CSV-like string
 string GetAllPendingOrders() {
-    string csvString = "Ticket,Symbol,Type,OpenPrice,StopLoss,TakeProfit,Expiration,OpenTime\n"; // CSV header
+    string csvString = "ticket,symbol,type,openprice,stoploss,takeprofit,expiration,opentime\n"; // CSV header
 
     int totalOrders = OrdersTotal();
     
@@ -274,23 +276,32 @@ void GetBrokerMarketInstrumentList()
     }
 }
 
-
+int decimalPlacesForPairs(string sPair)  {
+   return MarketInfo(sPair ,MODE_DIGITS);
+}
 
 string OpenOrder(string symbol, int order_type, double lotSize, double price, double stopLoss, double takeProfit, int slippage = 3, string comment="")
 {
     int ticket = -1; // Order ticket number
+    int symbolDigits = decimalPlacesForPairs(symbol);
+    price = NormalizeDouble(price,symbolDigits);
+    stopLoss = NormalizeDouble(stopLoss,symbolDigits);
+    takeProfit = NormalizeDouble(takeProfit,symbolDigits);
+    
+    Print("Opening order ", symbol, " ", order_type, " ", lotSize," openprice ", price," SL ", stopLoss," TP ", takeProfit, " com:", comment);
+    
 
     // Send a buy limit order
-    ticket = OrderSend(symbol, order_type, lotSize, price, slippage, stopLoss, takeProfit, comment, 0, Blue);
-
+    //ticket = OrderSend(symbol, order_type, lotSize, price, slippage, stopLoss, takeProfit, comment, 0, Blue);
+    ticket = OrderSend(symbol, order_type, lotSize, price, slippage, stopLoss, takeProfit, comment, 0, 0, Blue);
     // Check if the order was successfully executed
     if (ticket > 0)
     {
-        Print("Buy limit order for ", symbol, " opened successfully at price ", price, ". Ticket: ", ticket);
+        Print("Order for ", symbol, " opened successfully at price ", price, ". Ticket: ", ticket);
     }
     else
     {
-        Print("Failed to open buy limit order for ", symbol, ". Error code: ", GetLastError());
+        Print("Failed to open order for ", symbol, ". Error code: ", GetLastError());
         Print(ErrorDescription(GetLastError()));
     }
     
@@ -303,7 +314,7 @@ int ClosePosition(int ticket) {
    if(OrderSelect(ticket, SELECT_BY_TICKET)==true)
    {
    
-      if (OrderClose(ticket,OrderLots(),Ask,0,Red)) {
+      if (OrderClose(ticket,OrderLots(),0,0,Red)) {
          Print("Position closed successfully. Ticket: ", ticket);
          result = IntegerToString(ticket);
       } else {
@@ -321,8 +332,10 @@ int ClosePosition(int ticket) {
    return result;
 }
 
-void DeletePendingOrder(int ticket)
+string DeletePendingOrder(int ticket)
 {
+   string result = "OK";
+   
     // Check if the order with the specified ticket exists
     if (OrderSelect(ticket, SELECT_BY_TICKET))
     {
@@ -336,12 +349,15 @@ void DeletePendingOrder(int ticket)
         else
         {
             Print("Failed to delete pending order with ticket ", ticket, ". Error code: ", GetLastError());
+            result = IntegerToString(GetLastError());
         }
     }
     else
     {
         Print("Order with ticket ", ticket, " does not exist or is not a pending order.");
+        result = IntegerToString(GetLastError());
     }
+    return result;
 }
 
 struct TickData {
@@ -356,27 +372,22 @@ struct TickData {
 };
 
 string getLastTickDataJSON(string instrument) {
-    TickData tick;
-    double bid, ask;
-    long time;
+    MqlTick tick;
 
-    if (SymbolInfoTick(instrument, bid, ask, tick.date, tick.volume, time)) {
-        tick.instrument = instrument;
-        tick.ask = ask;
-        tick.bid = bid;
-        tick.lastDealPrice = (ask + bid) / 2.0;
-        tick.spreadPoints = (int)(NormalizeDouble(ask - bid, _Digits) / Point);
-        tick.dateInMilliseconds = time * 1000;
-
+    if (SymbolInfoTick(instrument, tick)) {
+    
+        double lastDealPrice = (tick.ask + tick.bid) / 2.0;
+        double spreadPoints = (NormalizeDouble(tick.ask - tick.bid, _Digits) / Point);
+        double dateInMilliseconds = tick.time * 1000;
         string jsonString = "{";
-        jsonString += "\"instrument\":\"" + tick.instrument + "\",";
-        jsonString += "\"date\":" + IntegerToString(tick.date) + ",";
+        jsonString += "\"instrument\":\"" + instrument + "\",";
+        jsonString += "\"date\":" + IntegerToString(tick.time) + ",";
         jsonString += "\"ask\":" + DoubleToString(tick.ask, _Digits) + ",";
         jsonString += "\"bid\":" + DoubleToString(tick.bid, _Digits) + ",";
-        jsonString += "\"lastDealPrice\":" + DoubleToString(tick.lastDealPrice, _Digits) + ",";
-        jsonString += "\"volume\":" + LongToString(tick.volume) + ",";
-        jsonString += "\"spreadPoints\":" + IntegerToString(tick.spreadPoints) + ",";
-        jsonString += "\"dateInMilliseconds\":" + LongToString(tick.dateInMilliseconds);
+        jsonString += "\"lastDealPrice\":" + DoubleToString(lastDealPrice, _Digits) + ",";
+        jsonString += "\"volume\":" + DoubleToString(tick.volume) + ",";
+        jsonString += "\"spreadPoints\":" + IntegerToString(spreadPoints) + ",";
+        jsonString += "\"dateInMilliseconds\":" + DoubleToString(dateInMilliseconds);
         jsonString += "}";
 
         return jsonString;
@@ -385,5 +396,29 @@ string getLastTickDataJSON(string instrument) {
         return "{}"; // Returning an empty JSON object if retrieval fails
     }
 }
+
+
+string getXBars(string instrument, int timeframe, int numberOfBars) {
+    string data = "Open,High,Low,Close,Volume,Time\n";
+
+
+    int bars = MathMin(numberOfBars, iBars(instrument, timeframe));
+    
+    Print(iClose(instrument, timeframe, 0));
+    for (int i = bars - 1; i >= 0; i--) {
+        double open = iOpen(instrument, timeframe, i);
+        double high = iHigh(instrument, timeframe, i);
+        double low = iLow(instrument, timeframe, i);
+        double close = iClose(instrument, timeframe, i);
+        long volume = iVolume(instrument, timeframe, i);
+        int time = iTime(instrument, timeframe, i);
+
+        string barInfo = StringFormat("%.5f,%.5f,%.5f,%.5f,%I64d,%s\n", open, high, low, close, volume, TimeToString(time, TIME_DATE | TIME_MINUTES));
+        data = data + barInfo;
+    }
+
+    return data;
+}
+
 
 //+------------------------------------------------------------------+

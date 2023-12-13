@@ -9,7 +9,7 @@
 
 Context context("helloworld");
 Socket socket(context,ZMQ_REP);
-string address = "tcp://*:5557";
+string address = "tcp://*:5555";
 
 // Possible commands sent by the client
 enum EnumCommands {
@@ -23,7 +23,9 @@ enum EnumCommands {
  GET_BROKER_MARKET_INSTRUMENT_LIST = 8,
  GET_OPEN_POSITIONS = 9,
  GET_CLOSED_POSITIONS = 10,
- CLOSE_POSITION = 11
+ CLOSE_POSITION = 11,
+ GET_LAST_TICK_DATA = 12,
+ GET_X_BARS = 13
 };
   
 
@@ -71,6 +73,31 @@ void OnStart()
     PrintFormat("PROCESS STOPPED!!!!");
   }
   
+  
+ int order_type_LUT(string order_type) {
+   int result = -1;
+   if (order_type == "buy")
+   {
+      result = OP_BUY;
+   } else if (order_type == "sell") 
+   {
+      result = OP_SELL;
+   } else if (order_type == "buy_limit") 
+   {
+      result = OP_BUYLIMIT;
+   } else if (order_type == "sell_limit") 
+   {
+      result = OP_SELLLIMIT;
+   } else if (order_type == "buy_stop") 
+   {
+      result = OP_BUYSTOP;
+   } else if (order_type == "sell_stop") 
+   {
+      result = OP_SELLSTOP;
+   } 
+   
+   return result;
+ }
 string HandleCommand(string command)
    {
       PrintFormat("Reading command: %s", command);
@@ -81,14 +108,17 @@ string HandleCommand(string command)
       ushort u_sep=StringGetCharacter(delimiter,0);
       string parsedStrings[];
       int count = StringSplit(command, u_sep, parsedStrings);
-      
+      double askValue;
       int cmdId = StringToInteger(parsedStrings[0]);
+      int order_type;
       
       switch (cmdId) {
                case OPEN_TRADE:
                   // Handle OPEN_TRADE command
                   Print("Received OPEN_TRADE command");
-                  result = OpenOrder(parsedStrings[1], parsedStrings[2], parsedStrings[3], Ask, parsedStrings[7], parsedStrings[8], parsedStrings[5], parsedStrings[9]);
+                  // askValue = SymbolInfoDouble(parsedStrings[1], SYMBOL_ASK);
+                  order_type = order_type_LUT(parsedStrings[2]);
+                  result = OpenOrder(parsedStrings[1], order_type, parsedStrings[3], parsedStrings[4], parsedStrings[7], parsedStrings[8], parsedStrings[5], parsedStrings[9]);
                   // Your logic for OPEN_TRADE
                   break;
                case MODIFY_POSITION:
@@ -101,6 +131,7 @@ string HandleCommand(string command)
                   // Handle DELETE_ORDER command
                   Print("Received DELETE_ORDER command");
                   // Your logic for DELETE_ORDER
+                  result = DeletePendingOrder(parsedStrings[1]);
                   break;
                case PARTIAL_CLOSE:
                   // Handle PARTIAL_CLOSE command
@@ -149,11 +180,17 @@ string HandleCommand(string command)
                   // Your logic for CLOSE_POSITION
                   result = ClosePosition(ticket);
                   break;
-               case CLOSE_POSITION:
+               case GET_LAST_TICK_DATA:
                   // Handle GET_LAST_TICK_DATA command
                   Print("Received GET_LAST_TICK_DATA command");
                   // Your logic for GET_LAST_TICK_DATA
                   result = getLastTickDataJSON(parsedStrings[1]);
+                  break;
+               case GET_X_BARS:
+                  // Handle GET_X_BARS command
+                  Print("Received GET_X_BARS command");
+                  // Your logic for GET_X_BARS
+                  result = getXBars(parsedStrings[1], parsedStrings[2], parsedStrings[3]);
                   break;
                default:
                   // Handle unrecognized command

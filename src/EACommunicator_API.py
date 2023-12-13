@@ -6,6 +6,8 @@ import zmq
 import numpy as np
 import pandas as pd
 
+from io import StringIO
+
 class TradingCommands(Enum):
     OPEN_TRADE  = 1 # ok
     MODIFY_POSITION = 2 # to test
@@ -15,10 +17,11 @@ class TradingCommands(Enum):
     GET_ALL_ORDERS = 6
     GET_SYMBOL_INFO = 7
     GET_BROKER_MARKET_INSTRUMENT_LIST = 8
-    GET_OPEN_POSITIONS = 9, # ok
-    GET_CLOSED_POSITIONS = 10, # ok
-    CLOSE_POSITION = 11, # ok
+    GET_OPEN_POSITIONS = 9 # ok
+    GET_CLOSED_POSITIONS = 10 # ok
+    CLOSE_POSITION = 11 # ok
     GET_LAST_TICK_DATA = 12
+    GET_X_BARS = 13
 
 class EACommunicator_API:
     
@@ -141,7 +144,7 @@ class EACommunicator_API:
 
     def Get_last_x_bars_from_now(self,
                                  instrument: str = 'EURUSD',
-                                 timeframe: int = 16408,
+                                 timeframe: str = "H1",
                                  nbrofbars: int = 1000) -> np.array:
         """
         Retrieves last x bars from a MT4 or MT5 EA bot.
@@ -158,7 +161,15 @@ class EACommunicator_API:
             close,
             volume
         """
-        pass
+        timeframeInt = self.get_timeframe_value(timeframe)
+        arguments = f"{instrument}^{timeframeInt}^{nbrofbars}"
+        csvReply = self.send_command(TradingCommands.GET_X_BARS, arguments)
+        
+        # Convert csv to pandas dataframe
+        df = self.readCsv(csvReply)
+        
+        # Return pd dataframe
+        return df
 
     def Get_all_orders(self) -> pd.DataFrame:
         
@@ -193,7 +204,7 @@ class EACommunicator_API:
     def readCsv(self, inputCsvString):
         try:
             # Convert the CSV string to a Pandas DataFrame
-            df = pd.read_csv(inputCsvString)
+            df = pd.read_csv(StringIO(inputCsvString))        
             return df
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -339,8 +350,8 @@ class EACommunicator_API:
         Returns:
             bool: True or False
         """
-        
-        result = self.send_command(TradingCommands.PARTIAL_CLOSE, str(ticket))
+        arguments = f"{ticket}^{volume_to_close}"
+        result = self.send_command(TradingCommands.PARTIAL_CLOSE, str(arguments))
         
         return result == "OK"
 
@@ -356,7 +367,7 @@ class EACommunicator_API:
             bool: True or False
         """
         
-        result = self.send_command(TradingCommands.PARTIAL_CLOSE, str(ticket))
+        result = self.send_command(TradingCommands.DELETE_ORDER, str(ticket))
         
         return result == "OK"
 
@@ -474,25 +485,25 @@ class EACommunicator_API:
         self.tf = 16408  # mt5.TIMEFRAME_D1
         timeframe.upper()
         if timeframe == 'MN1':
-            self.tf = 49153  # mt5.TIMEFRAME_MN1                                                 
+            self.tf = 43200  # mt5.TIMEFRAME_MN1                                                 
         if timeframe == 'W1':
-            self.tf = 32769  # mt5.TIMEFRAME_W1
+            self.tf = 1080  # mt5.TIMEFRAME_W1
         if timeframe == 'D1':
-            self.tf = 16408  # mt5.TIMEFRAME_D1
+            self.tf = 1440  # mt5.TIMEFRAME_D1
         if timeframe == 'H12':
-            self.tf = 16396  # mt5.TIMEFRAME_H12
+            self.tf = 720  # mt5.TIMEFRAME_H12
         if timeframe == 'H8':
-            self.tf = 16392  # mt5.TIMEFRAME_H8
+            self.tf = 480  # mt5.TIMEFRAME_H8
         if timeframe == 'H6':
-            self.tf = 16390  # mt5.TIMEFRAME_H6
+            self.tf = 360  # mt5.TIMEFRAME_H6
         if timeframe == 'H4':
-            self.tf = 16388  # mt5.TIMEFRAME_H4
+            self.tf = 240  # mt5.TIMEFRAME_H4
         if timeframe == 'H3':
-            self.tf = 16387  # mt5.TIMEFRAME_H3
+            self.tf = 180  # mt5.TIMEFRAME_H3
         if timeframe == 'H2':
-            self.tf = 16386  # mt5.TIMEFRAME_H2
+            self.tf = 120  # mt5.TIMEFRAME_H2
         if timeframe == 'H1':
-            self.tf = 16385  # mt5.TIMEFRAME_H1
+            self.tf = 60  # mt5.TIMEFRAME_H1
         if timeframe == 'M30':
             self.tf = 30  # mt5.TIMEFRAME_M30
         if timeframe == 'M20':
