@@ -38,6 +38,8 @@ int OnInit()
   {
 //---
    
+   EventSetTimer(1);
+   
    PrintFormat("STARTING ZMQ ASSISTANT");
    int result = socket.bind(address);
    
@@ -55,6 +57,8 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
+//--- destroy timer
+   EventKillTimer();
    
    PrintFormat("DeInit reason: %d", reason);
    
@@ -68,33 +72,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-    ZmqMsg clientCmd;
-    int waitIterations = 100; // Adjust this based on your tick frequency and desired 1-second delay
-    
-    for (int i = 0; i < waitIterations; ++i) {
-        int result = socket.recv(clientCmd, ZMQ_DONTWAIT); // Set ZMQ_DONTWAIT flag
-        
-        if (result == 1) {
-            // Message received
-            string command = clientCmd.getData();
-            //PrintFormat("Received result %d", result);
-            //PrintFormat("Received: %s", command);
-            
-            string replyMsg = HandleCommand(command);
-        
-            ZmqMsg reply(replyMsg);
-            socket.send(reply);
-            
-            if (command == "break^") {
-                // DeInit Everything
-                //break;
-            }
-            
-            //return; // Exit the loop and the function after processing the message
-        }
-        
-        Sleep(1); // Wait 100 milliseconds (0.1 seconds)
-    }
+
+   
 }
 
 
@@ -228,5 +207,57 @@ string HandleCommand(string command)
          }
       return result;
    }
+   
+   
+//+------------------------------------------------------------------+
+//| Timer function                                                   |
+//+------------------------------------------------------------------+
+void OnTimer()
+  {
+  
+  
+    
+//---
+   // Refresh rates to ensure latest data is fetched
+    RefreshRates();
+
+    // Arrays to store the historical data
+    MqlRates rates[];
+    
+    string command;
+    
+    
+   
+   
+    ZmqMsg clientCmd;
+    int waitIterations = 1000; // Adjust this based on your tick frequency and desired 1-second delay
+    
+    for (int i = 0; i < waitIterations; ++i) {
+        int result = socket.recv(clientCmd, ZMQ_DONTWAIT); // Set ZMQ_DONTWAIT flag
+        
+        if (result == 1) {
+            // Message received
+            command = clientCmd.getData();
+            //PrintFormat("Received result %d", result);
+            //PrintFormat("Received: %s", command);
+            
+            string replyMsg = HandleCommand(command);
+        
+            ZmqMsg reply(replyMsg);
+            socket.send(reply);
+            
+            if (command == "break^") {
+                // DeInit Everything
+                //break;
+            }
+            
+            //return; // Exit the loop and the function after processing the message
+        }
+        
+        Sleep(1); // Wait 100 milliseconds (0.1 seconds)
+    }
+    
+  }
+//+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
