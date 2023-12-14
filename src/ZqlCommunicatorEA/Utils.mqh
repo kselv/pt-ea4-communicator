@@ -515,29 +515,27 @@ string getXBars(string instrument, int timeframe, int numberOfBars) {
 
 string getXBars_V2(string instrument, int timeframe, int numberOfBars) {
     string data = "Open,High,Low,Close,Volume,Time\n";
-    MqlTick tick;
-
-    // Ensure the symbol is selected and get the latest tick
-    SymbolSelect(instrument, true);
-    SymbolInfoTick(instrument, tick);
-    //Print("Last ", instrument, " ask price: ", tick.ask);
-
-
-    //bool result = isRefresh(instrument, timeframe);
-    //if (result == false)
-    //{
-    //  Print("Unable to refresh ", instrument);
-    //}
+    
       
     // Refresh rates to ensure latest data is fetched
     RefreshRates();
 
     // Arrays to store the historical data
     MqlRates rates[];
+    
+    
+    
+   ArraySetAsSeries(rates, true);    
+   
+   // Refresh rates to ensure latest data is fetched
+   RefreshRates();
+   int size = ArrayResize(rates, 10);
+   int iNbrRecords = CopyRates(instrument, ENUM_TIMEFRAMES(timeframe), 0, 10, rates);
+   Print("symbol ", instrument, " ", rates[0].time);
 
     // Resize the array to hold the required number of bars
     ArraySetAsSeries(rates, true);
-    int size = ArrayResize(rates, numberOfBars);
+    size = ArrayResize(rates, numberOfBars);
    
     // Copy the rates
     int copied = CopyRates(instrument, ENUM_TIMEFRAMES(timeframe), 0, numberOfBars, rates);
