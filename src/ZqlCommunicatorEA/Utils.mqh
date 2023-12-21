@@ -532,6 +532,16 @@ string getXBars_V2(string instrument, int timeframe, int numberOfBars) {
    int size = ArrayResize(rates, 10);
    int iNbrRecords = CopyRates(instrument, ENUM_TIMEFRAMES(timeframe), 0, 10, rates);
    Print("symbol ", instrument, " ", rates[0].time);
+   // Refresh rates to ensure latest data is fetched
+   RefreshRates();
+   size = ArrayResize(rates, 10);
+   iNbrRecords = CopyRates(instrument, ENUM_TIMEFRAMES(timeframe), 0, 10, rates);
+   Print("symbol ", instrument, " ", rates[0].time);
+   // Refresh rates to ensure latest data is fetched
+   RefreshRates();
+   size = ArrayResize(rates, 10);
+   iNbrRecords = CopyRates(instrument, ENUM_TIMEFRAMES(timeframe), 0, 10, rates);
+   Print("symbol ", instrument, " ", rates[0].time);
 
     // Resize the array to hold the required number of bars
     ArraySetAsSeries(rates, true);
