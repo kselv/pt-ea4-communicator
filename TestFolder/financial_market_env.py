@@ -31,6 +31,15 @@ class FinancialMarketEnv(gym.Env):
         self.stop_loss = 0
         self.take_profit = 0
 
+
+        self.total_cumulative_rewards = 0
+        self.peak_portfolio_value = self.INITIAL_BALANCE
+        self.max_drawdown = 0
+        self.total_profit = 0
+        self.total_loss = 0
+        self.winning_trades = 0
+        self.losing_trades = 0
+        
     def add_technical_indicators(self, data):
         data['RSI'] = talib.RSI(data['Close'].values, timeperiod=14)
         data['SMA'] = talib.SMA(data['Close'].values, timeperiod=20)
@@ -48,7 +57,21 @@ class FinancialMarketEnv(gym.Env):
 
 
     def reset(self):
+        
+        self.total_cumulative_rewards = 0
+        self.peak_portfolio_value = self.INITIAL_BALANCE
+        self.max_drawdown = 0
+        self.total_profit = 0
+        self.total_loss = 0
+        self.winning_trades = 0
+        self.losing_trades = 0
+        
         self.current_step = 0
+
+        self.balance = self.INITIAL_BALANCE
+        self.holdings = 0
+        self.total_trades = 0
+
         observation = self._next_observation()
         return observation
     
@@ -180,6 +203,7 @@ class FinancialMarketEnv(gym.Env):
 
         # Get the next state
         next_state = self._next_observation()
+        
 
         if debug_log:
             # Debugging log
@@ -208,4 +232,40 @@ class FinancialMarketEnv(gym.Env):
         if mode == 'console':
             print(f'Step: {self.current_step}')
             
+            
+    # Implement additional methods for new metrics
+    def calculate_sortino_ratio(self):
+        # Implement Sortino ratio calculation
+        negative_returns = [r for r in self.returns if r < 0]
+        if len(negative_returns) < 2:
+            return 0
+        return np.mean(self.returns) / np.std(negative_returns) if np.std(negative_returns) != 0 else 0
+
+    def calculate_calmar_ratio(self):
+        annualized_return = np.mean(self.returns) * 252  # Assuming 252 trading days
+        return annualized_return / self.max_drawdown if self.max_drawdown != 0 else 0
+
+    def calculate_profit_factor(self):
+        return self.total_profit / self.total_loss if self.total_loss != 0 else 0
+
+    def calculate_win_loss_rate(self):
+        total_trades = self.winning_trades + self.losing_trades
+        win_rate = self.winning_trades / total_trades if total_trades != 0 else 0
+        loss_rate = self.losing_trades / total_trades if total_trades != 0 else 0
+        return win_rate, loss_rate
+
+    def calculate_avg_profit_loss(self):
+        avg_profit = self.total_profit / self.winning_trades if self.winning_trades != 0 else 0
+        avg_loss = self.total_loss / self.losing_trades if self.losing_trades != 0 else 0
+        return avg_profit, avg_loss
+
+    # Calculate VaR
+    def calculate_value_at_risk(self, confidence_level=0.05):
+        if len(self.returns) < 2:
+            return 0
+        # Assuming returns are normally distributed
+        mean = np.mean(self.returns)
+        sigma = np.std(self.returns)
+        var = mean - sigma * np.percentile(self.returns, confidence_level)
+        return var
     
