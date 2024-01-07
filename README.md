@@ -70,9 +70,17 @@ After installing the EA and setting up the library, you can run the ZmqCommunica
 
 Ensure that you have enabled automated trading and allowed DLL imports in MetaTrader. 
 You can check in the Metatrader console output (under the "Journal" tab) if the EA is succesfully initialized.
+
+### Successful configuration
+
+![image](https://github.com/kselv/pt-ea4-communicator/assets/73476424/7ac3fb22-a762-4d22-a5ca-f7cedddc7458)
+
+### Troubleshooting
+
 ![image](https://github.com/kselv/pt-ea4-communicator/assets/73476424/ea3f03e4-f8b3-4b83-851a-a691a13cc661)
+
 ![image](https://github.com/kselv/pt-ea4-communicator/assets/73476424/1ae4d4e2-91f7-45f9-bd50-9402d96362e8)
-![Uploading image.png…]()
+
 
 ## Customization
 
