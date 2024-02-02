@@ -81,7 +81,14 @@ You can check in the Metatrader console output (under the "Journal" tab) if the 
 
 ![image](https://github.com/kselv/pt-ea4-communicator/assets/73476424/1ae4d4e2-91f7-45f9-bd50-9402d96362e8)
 
-
 ## Customization
 
 If you wish to customize the EA, you can modify the `ZmqCommunicatorEA.mq4` file. Ensure you have adequate knowledge of MQL4 programming.
+
+
+## ☕ Buy Me a Coffee
+If you've found my work helpful or it has made your coding journey a bit easier, consider supporting me. Your support helps me to spend more time developing, maintaining these projects, and creating more useful tools for developers like you.
+
+👉 [Buy Me a Coffee](https://www.buymeacoffee.com/kselv)
+
+Every coffee counts and brings a huge smile to my face! Thank you for your support!
