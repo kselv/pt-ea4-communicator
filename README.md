@@ -36,7 +36,7 @@ You can customize the `EACommunicator_API.py` script to suit your specific requi
 
 For support or to report issues with the `EACommunicator_API.py` script, please open an issue in this repository.
 
-# Seeting up ZmqCommunicator in MetaTrader
+# Setting up ZmqCommunicator in MetaTrader
 
 This repository contains the necessary files to set up and run the ZmqCommunicator Expert Advisor (EA) in MetaTrader.
 
